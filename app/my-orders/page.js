@@ -1,29 +1,34 @@
-/* eslint-disable react-hooks/purity */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
 
+  // Load Orders
   useEffect(() => {
-    const list = JSON.parse(localStorage.getItem("bz-orders") || "[]");
+    let list = JSON.parse(localStorage.getItem("bz-orders") || "[]");
 
-    // إزالة الطلبات المنتهية
-    const validOrders = list.filter((o) => Date.now() < o.expiresAt);
+    // Remove duplicates (same ID)
+    const unique = Array.from(new Map(list.map(o => [o.id, o])).values());
+
+    // Remove expired
+    const validOrders = unique.filter((o) => Date.now() < o.expiresAt);
 
     setOrders(validOrders);
-
-    // حفظ بعد التنظيف
     localStorage.setItem("bz-orders", JSON.stringify(validOrders));
   }, []);
 
+  // Delete Order
   const deleteOrder = (id) => {
     const filtered = orders.filter((o) => o.id !== id);
     setOrders(filtered);
     localStorage.setItem("bz-orders", JSON.stringify(filtered));
   };
 
+  // Order progress text
   const getStatus = (order) => {
     const minutes = Math.floor((Date.now() - order.createdAt) / 60000);
 
@@ -35,50 +40,97 @@ export default function MyOrders() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-center text-4xl font-extrabold mb-8 bg-gradient-to-r
-      from-[#d4a755] to-[#fce4b7] bg-clip-text text-transparent">
-        طلبــاتــي 🧾
-      </h1>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="
+        min-h-screen text-white px-6 py-20 relative
+        bg-[url('/assets/seamless-dark-wooden.jpg')]
+        bg-cover bg-center bg-fixed
+      "
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
 
-      {orders.length === 0 && (
-        <p className="text-center text-gray-400 text-lg">
-          لا يوجد طلبات محفوظة حالياً.
-        </p>
-      )}
+      <div className="relative z-10">
 
-      <div className="max-w-2xl mx-auto space-y-6">
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            className="bg-[#191715] border border-[#2d2c2b] rounded-xl p-6 shadow-lg"
-          >
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-[#fce4b7]">
-                رقم الطلب: {order.id}
-              </h2>
-              <span className="text-green-400 text-sm">{getStatus(order)}</span>
-            </div>
+        {/* Title */}
+        <motion.h1
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center text-5xl font-extrabold mb-12 text-red-600 drop-shadow-lg"
+        >
+          طلبــاتــي 🧾
+        </motion.h1>
 
-            <div className="flex gap-4 mt-6">
-              <a
-                href={`/track?order=${order.id}`}
-                className="flex-1 py-3 rounded-lg text-center font-bold
-                bg-gradient-to-r from-[#d4a755] to-[#fce4b7] text-black hover:scale-105 transition"
-              >
-                تتبع الطلب
-              </a>
+        {/* Empty */}
+        {orders.length === 0 && (
+          <p className="text-center text-gray-300 text-xl">
+            لا يوجد طلبات محفوظة حالياً.
+          </p>
+        )}
 
-              <button
-                onClick={() => deleteOrder(order.id)}
-                className="px-4 py-3 bg-red-700 hover:bg-red-800 rounded-lg text-white font-bold"
-              >
-                حذف
-              </button>
-            </div>
-          </div>
-        ))}
+        {/* Orders List */}
+        <div className="max-w-2xl mx-auto space-y-6 mt-6">
+
+          {orders.map((order) => (
+            <motion.div
+              key={order.id}
+              initial={{ opacity: 0, y: 40, filter: "blur(4px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="
+                bg-[#131313]/85 backdrop-blur-md 
+                border border-red-900/40 
+                rounded-xl p-6 shadow-xl
+              "
+            >
+              {/* Order Header */}
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-red-500">
+                  رقم الطلب: {order.id}
+                </h2>
+
+                <span className="text-green-400 text-sm font-bold">
+                  {getStatus(order)}
+                </span>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-4 mt-6">
+
+                <a
+                  href={`/track?order=${order.id}`}
+                  className="
+                    flex-1 py-3 rounded-lg text-center font-bold text-white
+                    bg-red-600 hover:bg-red-700 
+                    hover:scale-105 active:scale-95 transition
+                  "
+                >
+                  تتبع الطلب
+                </a>
+
+                <button
+                  onClick={() => deleteOrder(order.id)}
+                  className="
+                    px-5 py-3 bg-red-800 hover:bg-red-900 
+                    rounded-lg text-white font-bold
+                    hover:scale-105 active:scale-95 transition
+                  "
+                >
+                  حذف
+                </button>
+
+              </div>
+            </motion.div>
+          ))}
+
+        </div>
+
       </div>
-    </div>
+    </motion.div>
   );
 }

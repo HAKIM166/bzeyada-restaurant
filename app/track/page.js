@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/purity */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,6 +18,7 @@ export default function TrackOrder() {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/purity
     if (Date.now() > found.expiresAt) {
       setError("⏳ انتهت صلاحية الطلب بعد 24 ساعة");
       setOrder(null);
@@ -27,7 +27,6 @@ export default function TrackOrder() {
 
     setError("");
     setOrder(found);
-
     updateStage(found);
   };
 
@@ -50,58 +49,84 @@ export default function TrackOrder() {
   ];
 
   const getIcon = (i) => {
-    if (i < stage)
-      return "✔";
-    if (i === stage)
-      return "⏳";
+    if (i < stage) return "✔";
+    if (i === stage) return "⏳";
     return "●";
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-center text-4xl font-extrabold mb-8 bg-gradient-to-r
-      from-[#d4a755] to-[#fce4b7] bg-clip-text text-transparent">
-        تتبع طلبك 📍
-      </h1>
+    <div
+      className="
+        min-h-screen text-white p-6 pt-28 relative
+        bg-[url('/assets/kababNar.png')] 
+        bg-cover bg-center bg-fixed
+      "
+    >
 
-      <div className="max-w-xl mx-auto bg-[#191715] border border-[#2d2c2b] rounded-xl p-6">
-        <input
-          className="w-full p-4 bg-black text-white border border-[#2d2c2b]
-          rounded-xl focus:outline-none mb-4"
-          placeholder="أدخل رقم الطلب"
-          value={orderId}
-          onChange={(e) => setOrderId(e.target.value)}
-        />
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px]"></div>
 
-        <button
-          onClick={search}
-          className="w-full py-3 bg-gradient-to-r from-[#d4a755] to-[#fce4b7]
-          text-black font-extrabold rounded-xl hover:scale-105 transition"
-        >
-          تتبع الطلب
-        </button>
+      <div className="relative z-10">
 
-        {error && (
-          <p className="text-red-500 text-center mt-4 font-bold">{error}</p>
-        )}
+        <h1 className="text-center text-5xl font-extrabold mb-10 text-red-500 drop-shadow-xl">
+          تتبع طلبك 📍
+        </h1>
 
-        {order && (
-          <div className="mt-6">
-            {steps.map((text, i) => (
-              <div key={i} className="flex items-center gap-4 mb-6">
-                <span className="text-2xl">{getIcon(i)}</span>
-                <span
-                  className={`text-lg ${
-                    i === stage ? "text-[#d4a755]" : "text-gray-300"
-                  }`}
-                >
-                  {text}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="max-w-xl mx-auto bg-[#121212]/90 border border-red-900/40 rounded-xl p-6 shadow-2xl">
+
+          {/* INPUT */}
+          <input
+            className="
+              w-full p-4 bg-black rounded-xl
+              text-white border border-red-900/40
+              focus:border-red-600 outline-none transition
+              mb-4
+            "
+            placeholder="أدخل رقم الطلب"
+            value={orderId}
+            onChange={(e) => setOrderId(e.target.value)}
+          />
+
+          {/* BUTTON */}
+          <button
+            onClick={search}
+            className="
+              w-full py-3 bg-red-600 hover:bg-red-700 
+              text-white font-extrabold rounded-xl
+              hover:scale-105 active:scale-95 transition
+            "
+          >
+            تتبع الطلب
+          </button>
+
+          {/* ERROR */}
+          {error && (
+            <p className="text-red-500 text-center mt-4 font-bold">{error}</p>
+          )}
+
+          {/* PROGRESS */}
+          {order && (
+            <div className="mt-6">
+              {steps.map((text, i) => (
+                <div key={i} className="flex items-center gap-4 mb-6">
+
+                  <span className="text-3xl text-red-500">{getIcon(i)}</span>
+
+                  <span
+                    className={`text-lg ${
+                      i === stage ? "text-red-500 font-bold" : "text-gray-300"
+                    }`}
+                  >
+                    {text}
+                  </span>
+
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
     </div>
   );
 }

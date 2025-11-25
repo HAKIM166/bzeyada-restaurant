@@ -29,7 +29,7 @@ export default function RootLayout({ children }) {
         <ToastProvider>
           <CartProvider>
             <Navbar />
-            <main className="pt-4 pb-10">{children}</main>
+            <main>{children}</main>
           </CartProvider>
         </ToastProvider>
       </body>
