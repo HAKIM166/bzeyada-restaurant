@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { motion } from "framer-motion";
 
 export default function ReviewPage() {
   const { cart, total } = useCart();
@@ -28,29 +29,41 @@ export default function ReviewPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pt-28">
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="
+        min-h-screen text-white px-6 py-20 relative
+        bg-[url('/assets/dark-wood.jpg')]
+        bg-cover bg-center bg-fixed
+      "
+    >
       <h1 className="text-center text-5xl font-extrabold mb-14 text-red-600">
         مراجعة الطلب
       </h1>
 
       <div className="max-w-3xl mx-auto space-y-8">
-
         {/* Customer Data */}
         <div className="bg-[#121212] p-6 rounded-xl border border-red-900/40 shadow">
           <h3 className="text-3xl font-bold text-red-500 mb-4">
             بيانات العميل
           </h3>
 
-          <p className="text-lg mb-1"><span className="text-red-400">الاسم:</span> {user.name}</p>
-          <p className="text-lg mb-1"><span className="text-red-400">الجوال:</span> {user.phone}</p>
-          <p className="text-lg mb-1"><span className="text-red-400">العنوان:</span> {user.address}</p>
+          <p className="text-lg mb-1">
+            <span className="text-red-400">الاسم:</span> {user.name}
+          </p>
+          <p className="text-lg mb-1">
+            <span className="text-red-400">الجوال:</span> {user.phone}
+          </p>
+          <p className="text-lg mb-1">
+            <span className="text-red-400">العنوان:</span> {user.address}
+          </p>
         </div>
 
         {/* Cart Items */}
         <div className="bg-[#121212] p-6 rounded-xl border border-red-900/40 shadow">
-          <h3 className="text-3xl font-bold text-red-500 mb-4">
-            الطلبات
-          </h3>
+          <h3 className="text-3xl font-bold text-red-500 mb-4">الطلبات</h3>
 
           {cart.map((item) => (
             <div
@@ -68,21 +81,16 @@ export default function ReviewPage() {
           ))}
 
           <p className="text-3xl font-bold mt-4">
-            الإجمالي:{" "}
-            <span className="text-red-500">{total} ريال</span>
+            الإجمالي: <span className="text-red-500">{total} ريال</span>
           </p>
         </div>
 
         {/* Payment */}
         <div className="bg-[#121212] p-6 rounded-xl border border-red-900/40 shadow">
-          <h3 className="text-3xl font-bold text-red-500 mb-4">
-            الدفع
-          </h3>
+          <h3 className="text-3xl font-bold text-red-500 mb-4">الدفع</h3>
 
           <p className="text-lg">
-            {payment === "cash"
-              ? "الدفع عند الاستلام"
-              : "دفع إلكتروني"}
+            {payment === "cash" ? "الدفع عند الاستلام" : "دفع إلكتروني"}
           </p>
         </div>
 
@@ -100,6 +108,6 @@ export default function ReviewPage() {
           تأكيد الطلب
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

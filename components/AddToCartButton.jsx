@@ -9,22 +9,24 @@ export default function AddToCartButton({ item }) {
 
   return (
     <button
-      onClick={() => {
-        addToCart(item);
-        showToast(`${item.name} تمت إضافته للسلة`);
-      }}
-      className="
-  px-4 py-2 
-  bg-gradient-to-r from-[#d4a755] to-[#fce4b7] 
-  text-black font-bold
-  rounded-lg text-sm
-  shadow-md shadow-[#00000040]
-  hover:opacity-90 
-  active:scale-95 
-  transition-all duration-200
-"
-    >
-      أضف للسلة
-    </button>
+  onClick={() => {
+    addToCart(item);
+    showToast(`${item.name} تمت إضافته للسلة`);
+  }}
+  className="
+    cursor-pointer sm:w-2xl max-sm:w-xl max-w-[85px] py-2 max-sm:py-1 bg-red-600 text-white font-bold rounded-sm
+    text-sm max-sm:text-[11px]
+
+    shadow-md shadow-black/40
+
+    hover:bg-red-700
+    active:scale-95
+
+    transition-all duration-200
+  "
+>
+  أضف للسلة
+</button>
+
   );
 }

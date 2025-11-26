@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function DetailsPage() {
   const router = useRouter();
@@ -23,13 +24,21 @@ export default function DetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pt-28">
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="
+        min-h-screen text-white px-6 py-20 relative
+        bg-[url('/assets/dark-wood.jpg')]
+        bg-cover bg-center bg-fixed
+      "
+    >
       <h1 className="text-center text-5xl font-extrabold text-red-600 mb-14">
         بيانات التوصيل
       </h1>
 
       <div className="max-w-2xl mx-auto space-y-6">
-
         <input
           type="text"
           placeholder="الاسم الكامل"
@@ -80,6 +89,6 @@ export default function DetailsPage() {
           متابعة الدفع
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

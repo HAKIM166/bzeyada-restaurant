@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { motion } from "framer-motion";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -25,13 +26,21 @@ export default function PaymentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pt-28 relative">
-      
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="
+        min-h-screen text-white px-6 py-20 relative
+        bg-[url('/assets/dark-wood.jpg')]
+        bg-cover bg-center bg-fixed
+      "
+    >
       {/* POPUP */}
       {showWarning && (
         <div
           className="
-            absolute top-10 left-1/2 -translate-x-1/2
+            absolute bottom-10 left-1/2 -translate-x-1/2
             bg-red-600 text-white px-6 py-3 rounded-xl
             shadow-xl text-lg font-bold animate-pulse
           "
@@ -45,7 +54,6 @@ export default function PaymentPage() {
       </h1>
 
       <div className="max-w-2xl mx-auto space-y-6">
-
         {/* Cash */}
         <label
           className="
@@ -87,6 +95,6 @@ export default function PaymentPage() {
           متابعة مراجعة الطلب
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { motion } from "framer-motion";
 
 export default function SuccessPage() {
   // Generate order ID
@@ -24,10 +25,17 @@ export default function SuccessPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-10 pt-28">
-
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="
+        min-h-screen text-white px-6 py-20 relative
+        bg-[url('/assets/wood1.jpg')]
+        bg-cover bg-center bg-fixed
+      "
+    >
       <div className="text-center">
-
         <h1 className="text-5xl font-extrabold text-red-600 mb-4">
           🎉 تم إرسال طلبك بنجاح!
         </h1>
@@ -38,9 +46,7 @@ export default function SuccessPage() {
 
         <p className="text-gray-300 text-xl mb-10">
           رقم طلبك هو:{" "}
-          <span className="text-red-500 font-extrabold">
-            {orderId}
-          </span>
+          <span className="text-red-500 font-extrabold">{orderId}</span>
         </p>
 
         <a
@@ -55,6 +61,6 @@ export default function SuccessPage() {
           الرجوع للصفحة الرئيسية
         </a>
       </div>
-    </div>
+    </motion.div>
   );
 }

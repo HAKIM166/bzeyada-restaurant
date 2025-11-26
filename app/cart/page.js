@@ -1,13 +1,22 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
+import { motion } from "framer-motion";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQty, total } = useCart();
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pt-28">
-
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="
+        min-h-screen text-white px-6 py-20 relative
+        bg-[url('/assets/dark-wood.jpg')]
+        bg-cover bg-center bg-fixed
+      "
+    >
       <h1 className="text-5xl font-extrabold text-center mb-14 text-red-600">
         الســلــة
       </h1>
@@ -30,7 +39,6 @@ export default function CartPage() {
         </div>
       ) : (
         <div className="max-w-3xl mx-auto space-y-6">
-
           {/* Items */}
           {cart.map((item) => (
             <div
@@ -50,7 +58,6 @@ export default function CartPage() {
               </div>
 
               <div className="flex items-center gap-3">
-
                 {/* - Button */}
                 <button
                   onClick={() => updateQty(item.id, item.qty - 1)}
@@ -93,7 +100,6 @@ export default function CartPage() {
                 >
                   حذف
                 </button>
-
               </div>
             </div>
           ))}
@@ -124,6 +130,6 @@ export default function CartPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
