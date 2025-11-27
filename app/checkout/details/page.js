@@ -43,9 +43,10 @@ export default function DetailsPage() {
   // ------------------------------
   // ✔ التحقق من صحة الاسم
   // ------------------------------
-  const validateName = (value) =>
-    value.trim().split(" ").length >= 2 &&
-    /^[\u0600-\u06FF\s]+$/.test(value);
+const validateName = (value) =>
+  value.trim().split(" ").length >= 2 &&
+  /^[A-Za-z\u0600-\u06FF\s]+$/.test(value);
+
 
   // ------------------------------
   // ✔ التحقق من رقم سعودي
@@ -93,7 +94,7 @@ export default function DetailsPage() {
   // ------------------------------
   const handleNext = () => {
     if (!validateName(name)) {
-      alert("❌ فضلاً أدخل اسم صحيح (مثال: محمد علي)");
+      alert("❌ فضلاً أدخل اسم صحيح (مثال: محمد أحمد)");
       return;
     }
 

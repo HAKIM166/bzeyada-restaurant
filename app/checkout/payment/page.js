@@ -13,6 +13,7 @@ export default function PaymentPage() {
 
   useEffect(() => {
     if (cart.length === 0) router.push("/cart");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart]);
 
   const handleNext = () => {
