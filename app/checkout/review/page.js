@@ -41,9 +41,9 @@ export default function ReviewPage() {
     if (!u) router.push("/checkout/details");
     if (!p) router.push("/checkout/payment");
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser(JSON.parse(u || "{}"));
     setPayment(p || "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!user) return null;
