@@ -3,25 +3,47 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
+import { useCart } from "@/context/CartContext";
 
 export default function SuccessPage() {
-  // Generate order ID
-  // eslint-disable-next-line react-hooks/purity
+  const { cart, total, clearCart } = useCart();
+
+  // رقم الطلب العشوائي
   const orderId = Math.floor(10000 + Math.random() * 90000);
 
   useEffect(() => {
-    const orders = JSON.parse(localStorage.getItem("bz-orders") || "[]");
+    const user = JSON.parse(localStorage.getItem("bz-user") || "{}");
+    const payment = localStorage.getItem("bz-payment");
 
-    orders.push({
+    const newOrder = {
       id: orderId,
       createdAt: Date.now(),
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      status: "active",
-    });
+      expiresAt: Date.now() + 1000 * 60 * 60 * 2, // الطلب صالح لمدة ساعتين
 
-    localStorage.setItem("bz-orders", JSON.stringify(orders));
+      user: {
+        name: user.name || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        deliveryMethod: user.deliveryMethod || "",
+        coords: user.coords || null,
+      },
 
+      cart: cart || [],
+
+      total: total || 0,
+
+      payment: payment || "cash",
+    };
+
+    let all = JSON.parse(localStorage.getItem("bz-orders") || "[]");
+    all.push(newOrder);
+
+    localStorage.setItem("bz-orders", JSON.stringify(all));
+
+    // مسح السلة بعد الحفظ
+    clearCart();
     localStorage.removeItem("bz-cart");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

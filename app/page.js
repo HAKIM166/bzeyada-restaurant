@@ -5,6 +5,8 @@
 import { useEffect } from "react";
 import AddToCartButton from "@/components/AddToCartButton";
 import { FaWhatsapp } from "react-icons/fa";
+import { ShoppingCart } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   const bestSellers = [
@@ -52,6 +54,25 @@ export default function Home() {
   }, []);
   // ===========================================================
 
+
+  // =============== LIVE CLOCK (REAL TIME) ====================
+  useEffect(() => {
+    function updateClock() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, "0");
+      const minutes = now.getMinutes().toString().padStart(2, "0");
+      const el = document.getElementById("live-time");
+      if (el) el.textContent = `${hours}:${minutes}`;
+    }
+
+    updateClock(); // تشغيل أول مرة
+    const interval = setInterval(updateClock, 1000); // تحديث كل ثانية
+
+    return () => clearInterval(interval); // تنظيف
+  }, []);
+  // ===========================================================
+
+
   return (
     <div className="min-h-screen bg-black text-white text-right">
       {/* HERO SECTION */}
@@ -59,11 +80,11 @@ export default function Home() {
         {/* BACKGROUND IMAGE */}
         <img
           src="/assets/grilled.png"
-          className="hero-bg absolute top-0 left-0 w-full h-full object-cover "
+          className="hero-bg absolute top-0 left-0 w-full h-full object-cover"
         />
 
-        {/* DARK BLACK OVERLAY */}
-        <div className="absolute  bg-black/60"></div>
+        {/* DARK OVERLAY */}
+        <div className="absolute bg-black/60 inset-0"></div>
 
         {/* HERO CONTENT */}
         <div className="relative z-10 max-w-5xl mx-auto px-6 fade-in">
@@ -85,7 +106,6 @@ export default function Home() {
             <a
               href="/menu"
               className="px-8 py-3 text-lg sm:text-xl font-bold bg-red-600 hover:bg-red-700 text-white rounded-2xl shadow-xl transform transition duration-150 hover:scale-105 active:scale-95"
-              aria-label="تصفح المنيو"
             >
               تصفّح المنيو
             </a>
@@ -95,19 +115,18 @@ export default function Home() {
               target="_blank"
               rel="noopener noreferrer"
               className="px-8 py-3 text-lg sm:text-xl font-bold border border-red-500 text-red-400 hover:bg-red-600 hover:text-white rounded-2xl transform transition duration-150 active:scale-95 flex items-center justify-center gap-2"
-              aria-label="اطلب عبر واتساب"
             >
               <span>اطلب عبر واتساب</span>
               <FaWhatsapp className="text-2xl" />
             </a>
           </div>
 
-          {/* small hint / scroll CTA */}
           <div className="mt-10 text-gray-300 text-sm opacity-90">
             انزل للاطّلاع على الأكثر مبيعًا • تحرّك لأسفل
           </div>
         </div>
       </section>
+
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <h3 className="text-4xl font-bold text-center text-red-500 mb-12">
           الأكثر مبيعًا
@@ -142,15 +161,30 @@ export default function Home() {
         <p className="text-red-500">📍 الرياض – حي النسيم</p>
         <p className="text-gray-300">📞 0500000000</p>
         <p className="text-gray-300">📱 واتساب: 0500000000</p>
-        <p className="text-gray-500 mt-4">🕒 1PM – 1AM</p>
+        <p className="text-gray-500 mt-4">
+          🕒 <span id="live-time">--:--</span>
+        </p>
+
+        {/* روابط الصفحات */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center text-gray-400 text-sm">
+          <a href="/about" className="hover:text-red-500 transition">من نحن</a>
+          <span className="hidden sm:block">•</span>
+          <a href="/contact" className="hover:text-red-500 transition">تواصل معنا</a>
+          <span className="hidden sm:block">•</span>
+          <a href="/privacy" className="hover:text-red-500 transition">سياسة الخصوصية</a>
+          <span className="hidden sm:block">•</span>
+          <a href="/terms" className="hover:text-red-500 transition">الشروط والأحكام</a>
+        </div>
+
         <p className="text-gray-600 text-sm mt-6">
           © 2024 بزيادة – Grill • BBQ — جميع الحقوق محفوظة
         </p>
+       
+
       </footer>
 
       {/* ========== CSS ANIMATIONS ========== */}
       <style jsx global>{`
-        /* Fade-in on load */
         .fade-in {
           opacity: 0;
           animation: fadeIn 1.2s ease-out forwards;
@@ -166,12 +200,10 @@ export default function Home() {
           }
         }
 
-        /* Parallax */
         .hero-bg {
           transition: transform 0.2s linear;
         }
 
-        /* Scroll reveal */
         .section-reveal {
           opacity: 0;
           transform: translateY(25px);

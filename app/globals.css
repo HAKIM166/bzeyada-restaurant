@@ -135,4 +135,19 @@
 .animate-toast {
   animation: slideUp 0.3s ease-out;
 }
+.leaflet-container {
+  height: 300px;
+  width: 100%;
+  border-radius: 15px;
+  margin-top: 10px;
+}
+
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-bounceSlow {
+  animation: bounceSlow 2.2s infinite ease-in-out;
+}
 
