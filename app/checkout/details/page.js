@@ -3,10 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import dynamic from "next/dynamic";
 
 import {
   MapPinIcon,
@@ -16,40 +13,19 @@ import {
 
 import { getDistanceFromLatLon } from "@/lib/distance";
 
+// 👇 تحميل كومبونانت الخريطة فقط (بدون SSR)
+const MapSelector = dynamic(() => import("@/components/MapSelector"), {
+  ssr: false,
+  loading: () => (
+    <div className="text-center p-6 text-gray-300">جاري تحميل الخريطة…</div>
+  ),
+});
+
 // ------------------------------
 // 🔥 إعدادات المطعم
 // ------------------------------
 const RESTAURANT_LOCATION = { lat: 25.4439767, lng: 49.5975184 };
 const MAX_DISTANCE_KM = 6;
-
-// ------------------------------
-// 🔥 ماركر احترافي بدون صور محلية
-// ------------------------------
-const markerIcon = new L.Icon({
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [28, 45],
-  iconAnchor: [14, 45],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-// ------------------------------
-// 🔥 Component لاختيار الموقع اليدوي
-// ------------------------------
-function LocationSelector({ setCoords }) {
-  useMapEvents({
-    click(e) {
-      setCoords({
-        lat: e.latlng.lat,
-        lng: e.latlng.lng,
-      });
-    },
-  });
-  return null;
-}
 
 export default function DetailsPage() {
   const router = useRouter();
@@ -82,7 +58,7 @@ export default function DetailsPage() {
   const detectLocation = () => {
     setLoadingLoc(true);
 
-    if (!navigator.geolocation) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
       alert("متصفحك لا يدعم تحديد الموقع");
       setLoadingLoc(false);
       return;
@@ -131,7 +107,6 @@ export default function DetailsPage() {
       return;
     }
 
-    // DELIVERY ONLY VALIDATION
     if (deliveryMethod === "delivery") {
       if (!coords) {
         alert("❌ الرجاء تحديد موقعك");
@@ -144,7 +119,6 @@ export default function DetailsPage() {
       }
     }
 
-    // 🔥 تخزين البيانات
     const userData = {
       name,
       phone,
@@ -159,9 +133,6 @@ export default function DetailsPage() {
     router.push("/checkout/payment");
   };
 
-  // ------------------------------
-  // ⭐ واجهة الصفحة
-  // ------------------------------
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -177,7 +148,7 @@ export default function DetailsPage() {
       </h1>
 
       <div className="max-w-3xl mx-auto space-y-6">
-
+        
         {/* نوع التوصيل */}
         <div className="flex justify-center gap-6 mb-4">
           <button
@@ -232,7 +203,6 @@ export default function DetailsPage() {
         {/* التوصيل فقط */}
         {deliveryMethod === "delivery" && (
           <>
-            {/* زر تحديد تلقائي */}
             <button
               onClick={detectLocation}
               disabled={loadingLoc}
@@ -247,7 +217,7 @@ export default function DetailsPage() {
               {loadingLoc ? "جاري تحديد موقعك…" : "تحديد الموقع تلقائياً"}
             </button>
 
-            {/* حالة التوصيل */}
+            {/* حالة الموقع */}
             {coords && (
               <div className="text-center mt-3">
                 {distanceKm <= MAX_DISTANCE_KM ? (
@@ -264,50 +234,34 @@ export default function DetailsPage() {
               </div>
             )}
 
-            {/* خريطة التحديد */}
             <p className="text-center text-gray-300 mt-4">
               أو اختر موقعك من الخريطة:
             </p>
 
+            {/* 👇 هنا يتم عرض الخريطة */}
             <div className="rounded-xl overflow-hidden shadow-lg border border-white/10">
-
-              {/* ✔️ هنا التعديل الوحيد */}
-              {typeof window !== "undefined" && (
-                <MapContainer
-                  center={[RESTAURANT_LOCATION.lat, RESTAURANT_LOCATION.lng]}
-                  zoom={14}
-                  scrollWheelZoom={true}
-                  style={{ height: "350px", width: "100%" }}
-                >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-                  <LocationSelector
-                    setCoords={(c) => {
-                      setCoords(c);
-                      const dist = getDistanceFromLatLon(
-                        RESTAURANT_LOCATION.lat,
-                        RESTAURANT_LOCATION.lng,
-                        c.lat,
-                        c.lng
-                      );
-                      setDistanceKm(dist);
-                    }}
-                  />
-
-                  {coords && (
-                    <Marker
-                      position={[coords.lat, coords.lng]}
-                      icon={markerIcon}
-                    />
-                  )}
-                </MapContainer>
-              )}
-
+              <MapSelector
+                coords={coords}
+                setCoords={setCoords}
+                calcDistance={(c) => {
+                  const dist = getDistanceFromLatLon(
+                    RESTAURANT_LOCATION.lat,
+                    RESTAURANT_LOCATION.lng,
+                    c.lat,
+                    c.lng
+                  );
+                  setDistanceKm(dist);
+                }}
+                center={[
+                  RESTAURANT_LOCATION.lat,
+                  RESTAURANT_LOCATION.lng,
+                ]}
+              />
             </div>
           </>
         )}
 
-        {/* متابعة */}
+        {/* زر متابعة */}
         <button
           onClick={handleNext}
           className="
