@@ -162,11 +162,11 @@ export default function MenuPage() {
 
                   <div className="p-3 max-sm:p-2">
 
-                    <h3 className="text-lg max-sm:text-sm font-bold text-red-500 leading-tight break-words">
+                    <h3 className="text-lg max-sm:text-sm font-bold text-red-500 leading-tight wrap-break-word">
                       {item.name}
                     </h3>
 
-                    <p className="text-gray-300 text-xs max-sm:text-[10px] mt-1 leading-tight break-words">
+                    <p className="text-gray-300 text-xs max-sm:text-[10px] mt-1 leading-tight wrap-break-word">
                       {item.desc}
                     </p>
 

@@ -144,12 +144,12 @@ export default function DetailsPage() {
       }
     }
 
-    // 🔥 تخزين البيانات — جاهزة للباك إند
+    // 🔥 تخزين البيانات
     const userData = {
       name,
       phone,
       address,
-      coords, // ← الموقع الحقيقي lat/lng
+      coords,
       distanceKm,
       deliveryMethod,
     };
@@ -270,34 +270,39 @@ export default function DetailsPage() {
             </p>
 
             <div className="rounded-xl overflow-hidden shadow-lg border border-white/10">
-              <MapContainer
-                center={[RESTAURANT_LOCATION.lat, RESTAURANT_LOCATION.lng]}
-                zoom={14}
-                scrollWheelZoom={true}
-                style={{ height: "350px", width: "100%" }}
-              >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-                <LocationSelector
-                  setCoords={(c) => {
-                    setCoords(c);
-                    const dist = getDistanceFromLatLon(
-                      RESTAURANT_LOCATION.lat,
-                      RESTAURANT_LOCATION.lng,
-                      c.lat,
-                      c.lng
-                    );
-                    setDistanceKm(dist);
-                  }}
-                />
+              {/* ✔️ هنا التعديل الوحيد */}
+              {typeof window !== "undefined" && (
+                <MapContainer
+                  center={[RESTAURANT_LOCATION.lat, RESTAURANT_LOCATION.lng]}
+                  zoom={14}
+                  scrollWheelZoom={true}
+                  style={{ height: "350px", width: "100%" }}
+                >
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-                {coords && (
-                  <Marker
-                    position={[coords.lat, coords.lng]}
-                    icon={markerIcon}
+                  <LocationSelector
+                    setCoords={(c) => {
+                      setCoords(c);
+                      const dist = getDistanceFromLatLon(
+                        RESTAURANT_LOCATION.lat,
+                        RESTAURANT_LOCATION.lng,
+                        c.lat,
+                        c.lng
+                      );
+                      setDistanceKm(dist);
+                    }}
                   />
-                )}
-              </MapContainer>
+
+                  {coords && (
+                    <Marker
+                      position={[coords.lat, coords.lng]}
+                      icon={markerIcon}
+                    />
+                  )}
+                </MapContainer>
+              )}
+
             </div>
           </>
         )}

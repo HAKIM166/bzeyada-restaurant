@@ -49,7 +49,7 @@ export default function Navbar() {
           </Link>
 
           {/* ===== Desktop Menu ===== */}
-          <div className="hidden md:flex gap-8 text-lg font-semibold text-white items-center">
+          <div className="hidden md:flex gap-10 text-lg font-semibold text-white items-center space-x-8">
 
             <Link
               href="/"
@@ -144,7 +144,7 @@ export default function Navbar() {
             <Link
               href="/cart"
               onClick={() => { setActiveLink("/cart"); setOpen(false); }}
-              className="block text-lg font-semibold flex items-center gap-3 hover:text-red-500"
+              className="text-lg font-semibold flex items-center gap-3 hover:text-red-500"
             >
               <ShoppingCart size={26} />
               <span>السلة</span>
@@ -193,7 +193,7 @@ export default function Navbar() {
         <Link
           href="/cart"
           className="
-            fixed bottom-6 right-6 z-[9999] md:hidden
+            fixed bottom-6 right-6 z-9999 md:hidden
             bg-red-600 text-white shadow-2xl rounded-full 
             w-16 h-16 flex items-center justify-center 
             animate-bounceSlow

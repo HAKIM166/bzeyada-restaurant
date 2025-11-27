@@ -20,7 +20,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
 
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999]">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-9999">
         {toasts.map((t) => (
           <div
             key={t.id}
