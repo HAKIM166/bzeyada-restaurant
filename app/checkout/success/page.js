@@ -7,18 +7,25 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 
 export default function SuccessPage() {
-  const { clearCart } = useCart();
   const params = useSearchParams();
   const router = useRouter();
+  const { clearCart } = useCart();
 
-  const orderId = params.get("orderId");
+  const [orderId, setOrderId] = useState(null);
   const [cleared, setCleared] = useState(false);
 
+  // قراءة orderId بعد hydration فقط
   useEffect(() => {
-    if (!orderId) {
-      router.replace("/");
-      return;
-    }
+    const id = params.get("orderId");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOrderId(id);
+
+    if (!id) router.replace("/");
+  }, [params, router]);
+
+  // بعد توفر orderId → نفذ عمليات clearCart
+  useEffect(() => {
+    if (!orderId) return;
 
     const user = JSON.parse(localStorage.getItem("bz-user") || "{}");
     if (!user?._id) {
@@ -29,25 +36,21 @@ export default function SuccessPage() {
     if (!cleared) {
       clearCart();
       localStorage.removeItem("bz-cart");
-
-      // لا نمسح payment أو delivery إلا لو اتسجل الطلب فعلاً
-      // لكن حالياً نحتفظ بيهم لأن Track قد يحتاجهم
-      
-      // حفظ آخر رقم طلب
       localStorage.setItem("last-order", orderId);
-
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCleared(true);
     }
   }, [orderId, cleared, clearCart, router]);
 
+  if (!orderId) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ duration: 0.6 }}
       className="
-        min-h-screen text-white px-6 py-20 relative
+        min-h-screen text-white px-6 py-20
         bg-[url('/assets/wood1.jpg')]
         bg-cover bg-center bg-fixed
       "
@@ -63,7 +66,7 @@ export default function SuccessPage() {
         </p>
 
         <p className="text-gray-300 text-xl mb-10">
-          رقم طلبك هو:
+          رقم طلبك:
           <span className="text-red-500 font-extrabold"> {orderId}</span>
         </p>
 
@@ -73,8 +76,7 @@ export default function SuccessPage() {
             block w-full max-w-sm mx-auto 
             px-12 py-4 rounded-full text-xl font-bold text-white
             bg-green-600 hover:bg-green-700 shadow-lg
-            hover:scale-105 active:scale-95 transition
-            mb-6
+            hover:scale-105 active:scale-95 transition mb-6
           "
         >
           تتبّع الطلب
