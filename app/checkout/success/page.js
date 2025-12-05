@@ -1,29 +1,28 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 
 export default function SuccessPage() {
-  const params = useSearchParams();
   const router = useRouter();
   const { clearCart } = useCart();
 
   const [orderId, setOrderId] = useState(null);
   const [cleared, setCleared] = useState(false);
 
-  // قراءة orderId بعد hydration فقط
+  // 🔥 قراءة orderId من window بدل useSearchParams (الحل النهائي)
   useEffect(() => {
-    const id = params.get("orderId");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOrderId(id);
+    if (typeof window !== "undefined") {
+      const id = new URLSearchParams(window.location.search).get("orderId");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOrderId(id);
 
-    if (!id) router.replace("/");
-  }, [params, router]);
+      if (!id) router.replace("/");
+    }
+  }, [router]);
 
   // بعد توفر orderId → نفذ عمليات clearCart
   useEffect(() => {
