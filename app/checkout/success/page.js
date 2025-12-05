@@ -1,50 +1,45 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 
 export default function SuccessPage() {
-  const { cart, total, clearCart } = useCart();
+  const { clearCart } = useCart();
+  const params = useSearchParams();
+  const router = useRouter();
 
-  // رقم الطلب العشوائي
-  const orderId = Math.floor(10000 + Math.random() * 90000);
+  const orderId = params.get("orderId");
+  const [cleared, setCleared] = useState(false);
 
   useEffect(() => {
+    if (!orderId) {
+      router.replace("/");
+      return;
+    }
+
     const user = JSON.parse(localStorage.getItem("bz-user") || "{}");
-    const payment = localStorage.getItem("bz-payment");
+    if (!user?._id) {
+      router.replace("/auth/login");
+      return;
+    }
 
-    const newOrder = {
-      id: orderId,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 1000 * 60 * 60 * 2, // الطلب صالح لمدة ساعتين
+    if (!cleared) {
+      clearCart();
+      localStorage.removeItem("bz-cart");
 
-      user: {
-        name: user.name || "",
-        phone: user.phone || "",
-        address: user.address || "",
-        deliveryMethod: user.deliveryMethod || "",
-        coords: user.coords || null,
-      },
+      // لا نمسح payment أو delivery إلا لو اتسجل الطلب فعلاً
+      // لكن حالياً نحتفظ بيهم لأن Track قد يحتاجهم
+      
+      // حفظ آخر رقم طلب
+      localStorage.setItem("last-order", orderId);
 
-      cart: cart || [],
-
-      total: total || 0,
-
-      payment: payment || "cash",
-    };
-
-    let all = JSON.parse(localStorage.getItem("bz-orders") || "[]");
-    all.push(newOrder);
-
-    localStorage.setItem("bz-orders", JSON.stringify(all));
-
-    // مسح السلة بعد الحفظ
-    clearCart();
-    localStorage.removeItem("bz-cart");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCleared(true);
+    }
+  }, [orderId, cleared, clearCart, router]);
 
   return (
     <motion.div
@@ -57,31 +52,47 @@ export default function SuccessPage() {
         bg-cover bg-center bg-fixed
       "
     >
-      <div className="text-center">
-        <h1 className="text-5xl font-extrabold text-red-600 mb-4">
+      <div className="text-center max-w-2xl mx-auto">
+
+        <h1 className="text-5xl font-extrabold text-red-600 mb-4 drop-shadow-lg">
           🎉 تم إرسال طلبك بنجاح!
         </h1>
 
-        <p className="text-gray-300 text-xl mb-6">
-          سيتم التواصل معك قريباً لتأكيد الطلب
+        <p className="text-gray-300 text-xl mb-4">
+          شكراً لك! سيتم التواصل معك قريباً لتأكيد الطلب.
         </p>
 
         <p className="text-gray-300 text-xl mb-10">
-          رقم طلبك هو:{" "}
-          <span className="text-red-500 font-extrabold">{orderId}</span>
+          رقم طلبك هو:
+          <span className="text-red-500 font-extrabold"> {orderId}</span>
         </p>
+
+        <a
+          href={`/track?orderId=${orderId}`}
+          className="
+            block w-full max-w-sm mx-auto 
+            px-12 py-4 rounded-full text-xl font-bold text-white
+            bg-green-600 hover:bg-green-700 shadow-lg
+            hover:scale-105 active:scale-95 transition
+            mb-6
+          "
+        >
+          تتبّع الطلب
+        </a>
 
         <a
           href="/"
           className="
+            block w-full max-w-sm mx-auto
             px-12 py-4 rounded-full text-xl font-bold
             bg-red-600 hover:bg-red-700
             text-white shadow-lg
             hover:scale-105 active:scale-95 transition
           "
         >
-          الرجوع للصفحة الرئيسية
+          الرجوع للرئيسية
         </a>
+
       </div>
     </motion.div>
   );

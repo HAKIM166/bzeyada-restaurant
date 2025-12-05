@@ -1,19 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 
-import {
-  MapPinIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/solid";
+import { RESTAURANT_LOCATION, MAX_DISTANCE_KM } from "@/lib/config";
 
-import { getDistanceFromLatLon } from "@/lib/distance";
-
-// 👇 تحميل كومبونانت الخريطة فقط (بدون SSR)
 const MapSelector = dynamic(() => import("@/components/MapSelector"), {
   ssr: false,
   loading: () => (
@@ -21,48 +14,60 @@ const MapSelector = dynamic(() => import("@/components/MapSelector"), {
   ),
 });
 
-// ------------------------------
-// 🔥 إعدادات المطعم
-// ------------------------------
-const RESTAURANT_LOCATION = { lat: 25.4439767, lng: 49.5975184 };
-const MAX_DISTANCE_KM = 6;
+// حساب المسافة
+function getDistanceFromLatLon(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export default function DetailsPage() {
   const router = useRouter();
 
+  /* ------------------------------
+      STATES
+  ------------------------------ */
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
-  const [coords, setCoords] = useState(null);
-  const [distanceKm, setDistanceKm] = useState(null);
-
-  const [loadingLoc, setLoadingLoc] = useState(false);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+
+  const [coords, setCoords] = useState(null);
+  const [distanceKm, setDistanceKm] = useState(null);
   const [address, setAddress] = useState("");
+  const [loadingLoc, setLoadingLoc] = useState(false);
 
-  // ------------------------------
-  // ✔ التحقق من صحة الاسم
-  // ------------------------------
-const validateName = (value) =>
-  value.trim().split(" ").length >= 2 &&
-  /^[A-Za-z\u0600-\u06FF\s]+$/.test(value);
+  /* ------------------------------
+      حماية الصفحة
+  ------------------------------ */
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("bz-user") || "{}");
 
+    if (!user?._id) return router.replace("/auth/login");
 
-  // ------------------------------
-  // ✔ التحقق من رقم سعودي
-  // ------------------------------
-  const validatePhone = (value) => /^05[0-9]{8}$/.test(value);
+    // تعبئة البيانات من حساب العميل تلقائياً
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setName(user.name || "");
+    setPhone(user.phone || "");
+  }, [router]);
 
-  // ------------------------------
-  // 📍 تحديد الموقع تلقائياً
-  // ------------------------------
+  /* ------------------------------
+      تحديد الموقع تلقائياً
+  ------------------------------ */
   const detectLocation = () => {
     setLoadingLoc(true);
 
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
+    if (!navigator?.geolocation) {
       alert("متصفحك لا يدعم تحديد الموقع");
-      setLoadingLoc(false);
-      return;
+      return setLoadingLoc(false);
     }
 
     navigator.geolocation.getCurrentPosition(
@@ -79,7 +84,6 @@ const validateName = (value) =>
 
         setCoords({ lat, lng });
         setDistanceKm(dist);
-
         setLoadingLoc(false);
       },
       () => {
@@ -89,51 +93,41 @@ const validateName = (value) =>
     );
   };
 
-  // ------------------------------
-  // ▶ متابعة الدفع
-  // ------------------------------
+  /* ------------------------------
+      SUBMIT
+  ------------------------------ */
   const handleNext = () => {
-    if (!validateName(name)) {
-      alert("❌ فضلاً أدخل اسم صحيح (مثال: محمد أحمد)");
-      return;
-    }
+    // فحص الحقول الأساسية
+    if (!name.trim()) return alert("❌ أدخل الاسم");
+    if (!phone.trim()) return alert("❌ أدخل رقم الجوال");
 
-    if (!validatePhone(phone)) {
-      alert("❌ رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام");
-      return;
-    }
-
-    if (!address.trim()) {
-      alert("❌ الرجاء كتابة العنوان بالتفصيل");
-      return;
-    }
-
+    // في حالة التوصيل فقط
     if (deliveryMethod === "delivery") {
-      if (!coords) {
-        alert("❌ الرجاء تحديد موقعك");
-        return;
-      }
+      if (!address.trim()) return alert("❌ أدخل العنوان بالكامل");
+      if (!coords) return alert("❌ الرجاء تحديد موقعك");
 
-      if (distanceKm > MAX_DISTANCE_KM) {
-        alert("🚫 موقعك خارج نطاق التوصيل — اختر الاستلام من الفرع");
-        return;
-      }
+      if (distanceKm > MAX_DISTANCE_KM)
+        return alert(`🚫 خارج نطاق التوصيل (${distanceKm.toFixed(2)} كم)`);
     }
 
-    const userData = {
+    // البيانات اللي هتتسجل في localStorage
+    const deliveryData = {
+      deliveryMethod,
       name,
       phone,
-      address,
-      coords,
-      distanceKm,
-      deliveryMethod,
+      address: deliveryMethod === "pickup" ? "" : address,
+      coords: deliveryMethod === "pickup" ? null : coords,
+      distanceKm: deliveryMethod === "pickup" ? 0 : distanceKm,
     };
 
-    localStorage.setItem("bz-user", JSON.stringify(userData));
+    localStorage.setItem("bz-delivery", JSON.stringify(deliveryData));
 
     router.push("/checkout/payment");
   };
 
+  /* ------------------------------
+      UI
+  ------------------------------ */
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -149,27 +143,29 @@ const validateName = (value) =>
       </h1>
 
       <div className="max-w-3xl mx-auto space-y-6">
-        
-        {/* نوع التوصيل */}
+
+        {/* اختيار طريقة التوصيل */}
         <div className="flex justify-center gap-6 mb-4">
           <button
             onClick={() => setDeliveryMethod("delivery")}
-            className={`px-6 py-3 rounded-xl font-bold ${
-              deliveryMethod === "delivery"
-                ? "bg-red-600 text-white"
-                : "bg-[#222]"
-            }`}
+            className={`px-6 py-3 rounded-xl font-bold transition 
+              ${
+                deliveryMethod === "delivery"
+                  ? "bg-red-600 text-white shadow-lg"
+                  : "bg-[#222] hover:bg-[#333]"
+              }`}
           >
             توصيل
           </button>
 
           <button
             onClick={() => setDeliveryMethod("pickup")}
-            className={`px-6 py-3 rounded-xl font-bold ${
-              deliveryMethod === "pickup"
-                ? "bg-red-600 text-white"
-                : "bg-[#222]"
-            }`}
+            className={`px-6 py-3 rounded-xl font-bold transition 
+              ${
+                deliveryMethod === "pickup"
+                  ? "bg-red-600 text-white shadow-lg"
+                  : "bg-[#222] hover:bg-[#333]"
+              }`}
           >
             استلام من الفرع
           </button>
@@ -178,32 +174,32 @@ const validateName = (value) =>
         {/* الاسم */}
         <input
           type="text"
-          placeholder="الاسم الكامل"
-          className="w-full p-4 bg-[#121212] rounded-xl border border-red-900/40"
+          placeholder="الاسم"
+          className="w-full p-4 bg-[#121212] rounded-xl border border-white/20 focus:border-red-600 outline-none transition"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* الهاتف */}
+        {/* الجوال */}
         <input
-          type="number"
-          placeholder="رقم الجوال (سعودي)"
-          className="w-full p-4 bg-[#121212] rounded-xl border border-red-900/40"
+          type="tel"
+          placeholder="رقم الجوال"
+          className="w-full p-4 bg-[#121212] rounded-xl border border-white/20 focus:border-red-600 outline-none transition"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
 
-        {/* العنوان */}
-        <textarea
-          placeholder="العنوان بالتفصيل"
-          className="w-full p-4 h-32 bg-[#121212] rounded-xl border border-red-900/40"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
-
-        {/* التوصيل فقط */}
+        {/* العنوان إذا كان توصيل */}
         {deliveryMethod === "delivery" && (
           <>
+            <textarea
+              placeholder="العنوان بالتفصيل"
+              className="w-full p-4 h-32 bg-[#121212] rounded-xl border border-red-900/40 focus:border-red-600 transition"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+
+            {/* زر تحديد الموقع */}
             <button
               onClick={detectLocation}
               disabled={loadingLoc}
@@ -211,64 +207,53 @@ const validateName = (value) =>
                 w-full py-4 rounded-xl 
                 bg-linear-to-r from-[#d4a755] to-[#b88b32]
                 text-black font-bold flex justify-center gap-3 shadow-lg
-                hover:opacity-90 active:scale-95
+                hover:opacity-90 active:scale-95 transition
               "
             >
-              <MapPinIcon className="w-6 h-6" />
-              {loadingLoc ? "جاري تحديد موقعك…" : "تحديد الموقع تلقائياً"}
+              {loadingLoc ? "جاري التحديد…" : "تحديد الموقع تلقائياً"}
             </button>
 
-            {/* حالة الموقع */}
+            {/* المسافة */}
             {coords && (
               <div className="text-center mt-3">
                 {distanceKm <= MAX_DISTANCE_KM ? (
-                  <p className="text-green-400 flex justify-center items-center gap-2 font-bold">
-                    <CheckCircleIcon className="w-6 h-6" />
-                    موقعك داخل نطاق التوصيل ({distanceKm.toFixed(2)} كم)
+                  <p className="text-green-400 font-bold">
+                    داخل نطاق التوصيل ({distanceKm.toFixed(2)} كم)
                   </p>
                 ) : (
-                  <p className="text-red-400 flex justify-center items-center gap-2 font-bold">
-                    <XCircleIcon className="w-6 h-6" />
-                    موقعك خارج نطاق التوصيل ({distanceKm.toFixed(2)} كم)
+                  <p className="text-red-400 font-bold">
+                    خارج نطاق التوصيل ({distanceKm.toFixed(2)} كم)
                   </p>
                 )}
               </div>
             )}
 
-            <p className="text-center text-gray-300 mt-4">
-              أو اختر موقعك من الخريطة:
-            </p>
-
-            {/* 👇 هنا يتم عرض الخريطة */}
-            <div className="rounded-xl overflow-hidden shadow-lg border border-white/10">
+            {/* الخريطة */}
+            <div className="rounded-xl overflow-hidden shadow-lg border border-white/10 mt-3">
               <MapSelector
                 coords={coords}
                 setCoords={setCoords}
                 calcDistance={(c) => {
-                  const dist = getDistanceFromLatLon(
+                  const d = getDistanceFromLatLon(
                     RESTAURANT_LOCATION.lat,
                     RESTAURANT_LOCATION.lng,
                     c.lat,
                     c.lng
                   );
-                  setDistanceKm(dist);
+                  setDistanceKm(d);
                 }}
-                center={[
-                  RESTAURANT_LOCATION.lat,
-                  RESTAURANT_LOCATION.lng,
-                ]}
+                center={[RESTAURANT_LOCATION.lat, RESTAURANT_LOCATION.lng]}
               />
             </div>
           </>
         )}
 
-        {/* زر متابعة */}
         <button
           onClick={handleNext}
           className="
             w-full py-4 rounded-full bg-red-600 
             font-extrabold text-xl hover:bg-red-700
-            active:scale-95
+            active:scale-95 shadow-lg transition
           "
         >
           متابعة الدفع

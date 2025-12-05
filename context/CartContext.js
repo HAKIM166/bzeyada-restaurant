@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -8,62 +7,58 @@ const CartContext = createContext();
 export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
 
-  // ----------------------------------------
-  // LOAD CART FROM LOCAL STORAGE
-  // ----------------------------------------
+  /* ---------------------- Load Cart ---------------------- */
   useEffect(() => {
     try {
       const saved = localStorage.getItem("bz-cart");
       if (saved) {
         const parsed = JSON.parse(saved);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (Array.isArray(parsed)) setCart(parsed);
       }
     } catch {}
   }, []);
 
-  // ----------------------------------------
-  // SAVE CART TO LOCAL STORAGE
-  // ----------------------------------------
+  /* ---------------------- Save Cart ---------------------- */
   useEffect(() => {
     try {
       localStorage.setItem("bz-cart", JSON.stringify(cart));
     } catch {}
   }, [cart]);
 
-  // ----------------------------------------
-  // GET CATEGORY LIMIT
-  // ----------------------------------------
+  /* ---------------------- Max Qty Rules ---------------------- */
   const getMaxQty = (item) => {
     const name = item?.name || "";
 
     if (name.includes("بيبسي") || name.includes("مشروبات") || name === "ماء")
       return 10;
 
-    if (name.includes("صحن") || name.includes("مشكل") || name.includes("مشويات"))
+    if (
+      name.includes("صحن") ||
+      name.includes("مشكل") ||
+      name.includes("مشويات")
+    )
       return 6;
 
-    return 5; // default
+    return 5;
   };
 
-  // -----------------------------------------------------------
-  // GENERATE UNIQUE ID (important when addons change)
-  // -----------------------------------------------------------
+  /* ---------------------- Unique ID Generator ---------------------- */
   const generateUniqueId = (item) => {
     return `${item.id}-${item.size || "reg"}-${JSON.stringify(
       item.freeAddons || []
     )}-${JSON.stringify(item.paidAddons || [])}-${item.note || ""}`;
   };
 
-  // -----------------------------------------------------------
-  // ADD ITEM TO CART
-  // -----------------------------------------------------------
+  /* ---------------------- Add Item ---------------------- */
   const addToCart = (item) => {
     const finalItem = {
       ...item,
+      basePrice: item.basePrice ?? item.price ?? 0, // 👈 السعر الأساسي الصحيح
       freeAddons: item.freeAddons || [],
       paidAddons: item.paidAddons || [],
       note: item.note || "",
-      qty: 1,
+      qty: item.qty || 1,
     };
 
     finalItem.uniqueId = generateUniqueId(finalItem);
@@ -84,29 +79,23 @@ export function CartProvider({ children }) {
     });
   };
 
-  // -----------------------------------------------------------
-  // REMOVE ITEM
-  // -----------------------------------------------------------
+  /* ---------------------- Remove Item ---------------------- */
   const removeFromCart = (uniqueId) => {
     setCart((prev) => prev.filter((item) => item.uniqueId !== uniqueId));
   };
 
-  // -----------------------------------------------------------
-  // UPDATE QUANTITY
-  // -----------------------------------------------------------
-  const updateQty = (uniqueId, qty) => {
+  /* ---------------------- Update Quantity ---------------------- */
+  const updateQty = (uniqueId, newQty) => {
     setCart((prev) =>
-      prev.map((item) => {
-        if (item.uniqueId !== uniqueId) return item;
-        const limit = getMaxQty(item);
-        return { ...item, qty: Math.max(1, Math.min(qty, limit)) };
-      })
+      newQty <= 0
+        ? prev.filter((item) => item.uniqueId !== uniqueId)
+        : prev.map((item) =>
+            item.uniqueId === uniqueId ? { ...item, qty: newQty } : item
+          )
     );
   };
 
-  // -----------------------------------------------------------
-  // UPDATE ADDONS (from modal)
-  // -----------------------------------------------------------
+  /* ---------------------- Update Addons ---------------------- */
   const updateItemAddons = (uniqueId, { freeAddons, paidAddons, note }) => {
     setCart((prev) =>
       prev.map((item) => {
@@ -119,7 +108,6 @@ export function CartProvider({ children }) {
           note: note || "",
         };
 
-        // Re-generate unique ID after addons change
         updated.uniqueId = generateUniqueId(updated);
 
         return updated;
@@ -127,23 +115,17 @@ export function CartProvider({ children }) {
     );
   };
 
-  // -----------------------------------------------------------
-  // CALCULATE TOTAL PRICE FOR ONE ITEM
-  // -----------------------------------------------------------
+  /* ---------------------- Price Calculation ---------------------- */
   const calculateItemTotal = (item) => {
-    const basePrice = Number(item.finalPrice ?? item.price ?? 0);
+    const base = Number(item.basePrice ?? 0); // 👈 السعر الأساسي الحقيقي
 
     const paidAddonsTotal =
-      item.paidAddons?.reduce((sum, addon) => {
-        return sum + addon.price * addon.qty;
-      }, 0) || 0;
+      item.paidAddons?.reduce((sum, addon) => sum + addon.price * addon.qty, 0) ||
+      0;
 
-    return (basePrice + paidAddonsTotal) * item.qty;
+    return (base + paidAddonsTotal) * item.qty;
   };
 
-  // -----------------------------------------------------------
-  // CART TOTAL
-  // -----------------------------------------------------------
   const total = cart.reduce((sum, item) => sum + calculateItemTotal(item), 0);
 
   return (

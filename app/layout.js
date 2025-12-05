@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthContext";   // ⭐ IMPORT جديد
 import { ToastProvider } from "@/components/ui/toast";
 
 const geistSans = Geist({
@@ -22,15 +23,17 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050505]`}
       >
         <ToastProvider>
-          <CartProvider>
-            <Navbar />
-            <main>{children}</main>
-          </CartProvider>
+          <AuthProvider> {/* ⭐ أضفناها هنا */}
+            <CartProvider>
+              <Navbar />
+              <main>{children}</main>
+            </CartProvider>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>

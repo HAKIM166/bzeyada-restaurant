@@ -2,190 +2,259 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/context/CartContext";
 import { motion } from "framer-motion";
-import { MapPinIcon } from "@heroicons/react/24/solid";
-
-import { addons } from "@/lib/addonsData";   // ⭐ مهم جداً
-
-// دالة تجيب اسم الإضافة المجانية باستخدام ID
-const getFreeAddonName = (idOrObj) => {
-  // لو الإضافة object فعلاً (name موجود) نرجعها مباشرة
-  if (typeof idOrObj === "object" && idOrObj?.name) {
-    return idOrObj.name;
-  }
-
-  // لو الإضافة رقم (ID)
-  const id = Number(idOrObj);
-
-  const freeGroup = addons.find((group) => group.type === "free");
-  if (!freeGroup) return id;
-
-  const match = freeGroup.items.find((i) => i.id === id);
-  return match ? match.name : id;
-};
+import { useCart } from "@/context/CartContext";
 
 export default function ReviewPage() {
   const { cart, total } = useCart();
   const router = useRouter();
 
   const [user, setUser] = useState(null);
+  const [delivery, setDelivery] = useState(null);
   const [payment, setPayment] = useState("");
+  const [addons, setAddons] = useState(null);
 
   useEffect(() => {
-    if (cart.length === 0) router.push("/cart");
+    if (!cart || cart.length === 0) {
+      router.replace("/cart");
+      return;
+    }
 
-    const u = localStorage.getItem("bz-user");
-    const p = localStorage.getItem("bz-payment");
+    const u = JSON.parse(localStorage.getItem("bz-user") || "{}");
+    if (!u?._id) {
+      router.replace("/auth/login");
+      return;
+    }
 
-    if (!u) router.push("/checkout/details");
-    if (!p) router.push("/checkout/payment");
+    const d = JSON.parse(localStorage.getItem("bz-delivery") || "{}");
+    if (!d?.deliveryMethod) {
+      router.replace("/checkout/details");
+      return;
+    }
 
-    setUser(JSON.parse(u || "{}"));
-    setPayment(p || "");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const p = localStorage.getItem("bz-payment") || "";
+    if (!p) {
+      router.replace("/checkout/payment");
+      return;
+    }
 
-  if (!user) return null;
+    fetch("/api/addons")
+      .then((r) => r.json())
+      .then((res) => res.success && setAddons(res.data))
+      .catch(() => setAddons(null));
 
-  const googleMapsUrl =
-    user.coords
-      ? `https://www.google.com/maps?q=${user.coords.lat},${user.coords.lng}`
-      : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUser(u);
+    setDelivery(d);
+    setPayment(p);
+  }, [cart, router]);
+
+  if (!user || !delivery) return null;
+
+  const isPickup = delivery.deliveryMethod === "pickup";
+
+  const getAddonName = (id) => {
+    if (!addons) return id;
+
+    const f = addons.free?.find((a) => a.id == id);
+    if (f) return f.name;
+
+    const p = addons.paid?.find((a) => a.id == id);
+    if (p) return p.name;
+
+    return id;
+  };
 
   const calcPaidAddons = (item) =>
-    item.paidAddons?.reduce((sum, a) => sum + a.qty * a.price, 0) || 0;
+    item.paidAddons?.reduce(
+      (sum, addon) => sum + addon.price * addon.qty,
+      0
+    ) || 0;
 
   const calcItemSubtotal = (item) => {
-    const base = Number(item.finalPrice ?? item.price ?? 0);
-    const addonsTotal = calcPaidAddons(item);
-    return (base + addonsTotal) * item.qty;
+    const base = Number(item.basePrice ?? 0);
+    const addons = calcPaidAddons(item);
+    return (base + addons) * item.qty;
+  };
+
+  const saveMockOrder = (mockId) => {
+    const finalOrder = {
+      _id: mockId,
+      createdAt: Date.now(),
+      status: "pending",
+      user: {
+        name: user.name,
+        phone: user.phone,
+        deliveryMethod: delivery.deliveryMethod,
+        address: delivery.address,
+        coords: delivery.coords,
+      },
+      cart,
+      total,
+      payment,
+    };
+
+    let existing = JSON.parse(localStorage.getItem("mock-orders") || "[]");
+    existing.push(finalOrder);
+
+    localStorage.setItem("mock-orders", JSON.stringify(existing));
+  };
+
+  const confirmOrder = async () => {
+    try {
+      const res = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user._id,
+          cart,
+          total,
+          payment,
+          deliveryMethod: delivery.deliveryMethod,
+          address: delivery.address,
+          coords: delivery.coords,
+        }),
+      });
+
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {}
+
+      if (!res.ok || !data?.success) {
+        const mockId = Math.floor(10000 + Math.random() * 90000);
+        saveMockOrder(mockId);
+        router.push(`/checkout/success?orderId=${mockId}`);
+        return;
+      }
+
+      router.push(`/checkout/success?orderId=${data.orderId}`);
+    } catch {
+      const mockId = Math.floor(10000 + Math.random() * 90000);
+      saveMockOrder(mockId);
+      router.push(`/checkout/success?orderId=${mockId}`);
+    }
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="min-h-screen text-white px-6 py-20 bg-[url('/assets/dark-wood.jpg')] bg-cover bg-fixed"
+      transition={{ duration: 0.6 }}
+      className="
+        min-h-screen text-white px-6 py-24 relative
+        bg-[url('/assets/dark-wood.jpg')] bg-cover bg-center bg-fixed
+      "
     >
-      <h1 className="text-center text-5xl font-extrabold mb-14 text-red-600">
-        مراجعة الطلب
-      </h1>
+      <div className="absolute inset-0 bg-black/40"></div>
 
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="relative z-10 max-w-3xl mx-auto">
 
-        {/* بيانات العميل */}
-        <div className="bg-[#121212] p-6 rounded-xl border border-red-900/40 shadow">
-          <h3 className="text-3xl font-bold text-red-500 mb-4">بيانات العميل</h3>
+        <h1 className="text-center text-5xl font-extrabold mb-12 text-red-600 drop-shadow-lg">
+          مراجعة الطلب
+        </h1>
 
-          <p className="text-lg mb-2">
-            <span className="text-red-400">الاسم:</span> {user.name}
-          </p>
+        <div className="space-y-6">
 
-          <p className="text-lg mb-2">
-            <span className="text-red-400">الجوال:</span> {user.phone}
-          </p>
+          {/* بيانات العميل */}
+          <div className="bg-[#141414]/90 p-6 rounded-2xl border border-white/10 shadow-xl">
+            <h2 className="text-2xl font-bold text-red-500 mb-4">بيانات العميل</h2>
 
-          <p className="text-lg mb-2">
-            <span className="text-red-400">طريقة الاستلام:</span>{" "}
-            {user.deliveryMethod === "delivery" ? "توصيل" : "استلام من الفرع"}
-          </p>
+            <p><span className="text-red-400">الاسم:</span> {user.name}</p>
+            <p><span className="text-red-400">الجوال:</span> {user.phone}</p>
+            <p>
+              <span className="text-red-400">طريقة الاستلام:</span>
+              {isPickup ? " استلام من الفرع" : " توصيل للموقع"}
+            </p>
 
-          <p className="text-lg mb-2">
-            <span className="text-red-400">العنوان:</span> {user.address}
-          </p>
+            {!isPickup && (
+              <p><span className="text-red-400">العنوان:</span> {delivery.address}</p>
+            )}
+          </div>
 
-          {user.deliveryMethod === "delivery" && user.coords && (
-            <div className="mt-4 bg-black/40 p-4 rounded-xl border border-red-900/40">
-              <h4 className="text-xl font-bold mb-2 flex items-center gap-2 text-red-400">
-                <MapPinIcon className="w-6 h-6 text-red-500" />
-                موقع العميل
-              </h4>
+          {/* تفاصيل الطلب */}
+          <div className="bg-[#141414]/90 p-6 rounded-2xl border border-white/10 shadow-xl">
+            <h2 className="text-2xl font-bold text-red-500 mb-4">تفاصيل الطلب</h2>
 
-              <p className="text-sm text-gray-300">خط العرض: {user.coords.lat}</p>
-              <p className="text-sm text-gray-300 mb-2">خط الطول: {user.coords.lng}</p>
+            {cart.map((item) => {
+              const addonTotal = calcPaidAddons(item);
+              const subtotal = calcItemSubtotal(item);
 
-              <a
-                href={googleMapsUrl}
-                target="_blank"
-                className="inline-block mt-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold"
-              >
-                فتح الموقع على خرائط Google
-              </a>
-            </div>
-          )}
-        </div>
+              return (
+                <div key={item.uniqueId} className="border-b border-white/10 pb-4 mb-4">
 
-        {/* الطلبات */}
-        <div className="bg-[#121212] p-6 rounded-xl border border-red-900/40 shadow">
-          <h3 className="text-3xl font-bold text-red-500 mb-4">الطلبات</h3>
+                  {/* اسم المنتج + السعر الأساسي */}
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-white text-lg">{item.name}</h3>
 
-          {cart.map((item) => (
-            <div key={item.uniqueId} className="border-b border-white/10 pb-4 mb-4">
+                    {/* السعر الأساسي يجب أن يظهر هنا بالأحمر كما كان */}
+                    <span className="text-red-500 font-bold text-lg">
+                      {item.basePrice} ريال
+                    </span>
+                  </div>
 
-              <div className="flex justify-between items-center">
-                <h4 className="text-xl font-bold text-white">{item.name}</h4>
-                <span className="text-red-500 font-bold">{calcItemSubtotal(item)} ريال</span>
-              </div>
+                  {/* الكمية */}
+                  <p className="text-gray-400 text-sm">الكمية: {item.qty}</p>
 
-              <p className="text-gray-300 text-sm mt-1">الكمية: {item.qty}</p>
-              <p className="text-gray-300 text-sm">السعر الأساسي: {item.finalPrice || item.price} ريال</p>
+                  {/* إضافات مجانية */}
+                  {item.freeAddons?.length > 0 && (
+                    <div className="text-green-400 text-sm mt-2">
+                      إضافات مجانية:
+                      <ul className="ml-4 text-white">
+                        {item.freeAddons.map((freeId, i) => (
+                          <li key={i}>• {getAddonName(freeId)}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-              {/* ⭐ إضافات مجانية (تحويل الرقم إلى الاسم الحقيقي) */}
-              {item.freeAddons?.length > 0 && (
-                <div className="mt-2 text-green-400 text-sm">
-                  إضافات مجانية:
-                  <ul className="ml-4 mt-1 space-y-1 text-white">
-                    {item.freeAddons.map((free, index) => (
-                      <li key={index}>• {getFreeAddonName(free)}</li>
-                    ))}
-                  </ul>
+                  {/* إضافات مدفوعة */}
+                  {item.paidAddons?.length > 0 && (
+                    <div className="text-red-400 text-sm mt-2">
+                      إضافات مدفوعة:
+                      <ul className="ml-4 text-white">
+                        {item.paidAddons.map((add, i) => (
+                          <li key={i}>
+                            • {getAddonName(add.id)} × {add.qty} — {add.qty * add.price} ريال
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* إجمالي المنتج */}
+                  <p className="text-red-500 font-bold mt-3 text-lg">
+                    إجمالي المنتج: {subtotal} ريال
+                  </p>
+
                 </div>
-              )}
+              );
+            })}
 
-              {/* إضافات مدفوعة */}
-              {item.paidAddons?.length > 0 && (
-                <div className="mt-2 text-red-400 text-sm">
-                  إضافات مدفوعة:
-                  <ul className="ml-4 mt-1 space-y-1 text-white">
-                    {item.paidAddons.map((addon) => (
-                      <li key={addon.id}>
-                        • {addon.name} × {addon.qty} — {addon.qty * addon.price} ريال
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            <p className="text-3xl font-bold mt-4">
+              الإجمالي الكلي: <span className="text-red-500">{total} ريال</span>
+            </p>
+          </div>
 
-              {item.note && (
-                <p className="mt-2 text-yellow-300 text-sm">
-                  ملاحظات: {item.note}
-                </p>
-              )}
-            </div>
-          ))}
+          <div className="bg-[#141414]/90 p-6 rounded-2xl border border-white/10 shadow-xl">
+            <h2 className="text-2xl font-bold text-red-500 mb-4">طريقة الدفع</h2>
+            <p className="text-lg">
+              {payment === "cash" ? "💵 الدفع عند الاستلام" : "💳 دفع إلكتروني"}
+            </p>
+          </div>
 
-          <p className="text-3xl font-bold mt-4">
-            الإجمالي: <span className="text-red-500">{total} ريال</span>
-          </p>
+          <button
+            onClick={confirmOrder}
+            className="
+              w-full py-4 rounded-full bg-red-600 
+              font-extrabold text-xl hover:bg-red-700 
+              active:scale-95 transition
+            "
+          >
+            تأكيد الطلب
+          </button>
+
         </div>
-
-        {/* الدفع */}
-        <div className="bg-[#121212] p-6 rounded-xl border border-red-900/40 shadow">
-          <h3 className="text-3xl font-bold text-red-500 mb-4">الدفع</h3>
-          <p className="text-lg">
-            {payment === "cash" ? "الدفع عند الاستلام" : "دفع إلكتروني"}
-          </p>
-        </div>
-
-        {/* تأكيد */}
-        <button
-          onClick={() => router.push("/checkout/success")}
-          className="w-full py-4 rounded-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-xl mt-6 shadow-lg"
-        >
-          تأكيد الطلب
-        </button>
       </div>
     </motion.div>
   );

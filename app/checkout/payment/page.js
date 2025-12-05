@@ -1,26 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/context/CartContext";
 import { motion } from "framer-motion";
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { cart } = useCart();
   const [selected, setSelected] = useState("cash");
   const [showWarning, setShowWarning] = useState(false);
 
+  // ---------------------------
+  //   حماية الصفحة
+  // ---------------------------
   useEffect(() => {
-    if (cart.length === 0) router.push("/cart");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart]);
+    const user = JSON.parse(localStorage.getItem("bz-user") || "{}");
+    const delivery = JSON.parse(localStorage.getItem("bz-delivery") || "{}");
 
+    if (!user?._id) router.replace("/auth/login");
+    if (!delivery?.deliveryMethod) router.replace("/checkout/details");
+  }, [router]);
+
+  // ---------------------------
+  //   Next Step
+  // ---------------------------
   const handleNext = () => {
     localStorage.setItem("bz-payment", selected);
     router.push("/checkout/review");
   };
 
+  // ---------------------------
+  //   Click on Disabled Payment
+  // ---------------------------
   const handleCardClick = () => {
     setShowWarning(true);
     setTimeout(() => setShowWarning(false), 2500);
@@ -37,7 +47,7 @@ export default function PaymentPage() {
         bg-cover bg-center bg-fixed
       "
     >
-      {/* POPUP */}
+      {/* ⚠️ التحذير */}
       {showWarning && (
         <div
           className="
@@ -55,7 +65,8 @@ export default function PaymentPage() {
       </h1>
 
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Cash */}
+        
+        {/* 💵 Cash */}
         <label
           className="
             flex items-center gap-3 cursor-pointer p-5 
@@ -71,7 +82,7 @@ export default function PaymentPage() {
           <span className="text-xl font-bold">الدفع عند الاستلام</span>
         </label>
 
-        {/* Card (disabled) */}
+        {/* ❌ Card (DISABLED — نفس القديم) */}
         <label
           onClick={handleCardClick}
           className="
