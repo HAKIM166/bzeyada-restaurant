@@ -14,12 +14,17 @@ export default function OTPPage() {
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
 
-  const temp = JSON.parse(localStorage.getItem("bz-temp-register") || "{}");
+  // ⛔ كان سبب المشكلة — الآن محمي داخل useEffect
+  const [temp, setTemp] = useState(null);
 
   useEffect(() => {
-    if (!temp?.phone) router.replace("/auth/register");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const saved = localStorage.getItem("bz-temp-register");
+    if (saved) {
+      setTemp(JSON.parse(saved));
+    } else {
+      router.replace("/auth/register");
+    }
+  }, [router]);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -115,6 +120,9 @@ export default function OTPPage() {
     showToast("🔄 تم إرسال كود جديد");
   };
 
+  // ⛔ منع ظهور الصفحة قبل تحميل temp (يحل مشكلة Vercel 100%)
+  if (!temp) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -123,7 +131,7 @@ export default function OTPPage() {
       className="min-h-screen text-white px-6 py-20 bg-[url('/assets/wood1.jpg')] bg-cover bg-center bg-fixed"
     >
       <div className="max-w-md mx-auto bg-black/70 p-8 rounded-2xl shadow-xl border border-white/10 backdrop-blur-sm">
-
+        
         <h1 className="text-center text-4xl font-extrabold text-red-500 mb-1">
           التحقق من رقم الجوال
         </h1>
@@ -133,10 +141,9 @@ export default function OTPPage() {
           <span className="text-red-400 font-bold"> {temp.phone} </span>
         </p>
 
-        {/* OTP BOXES */}
         <div
           className="flex justify-between mb-6"
-          style={{ direction: "ltr" }}   // 🚀 يمنع وراثة RTL
+          style={{ direction: "ltr" }}
           onPaste={handlePaste}
         >
           {digits.map((d, i) => (
@@ -152,7 +159,7 @@ export default function OTPPage() {
               "
               style={{
                 direction: "ltr",
-                unicodeBidi: "plaintext", // 🔥 أقوى حل
+                unicodeBidi: "plaintext",
                 fontFamily: "monospace",
                 textAlign: "center",
               }}
