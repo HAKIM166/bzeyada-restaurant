@@ -1,19 +1,15 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 import { CartProvider } from "@/context/CartContext";
-import { AuthProvider } from "@/context/AuthContext";   // ⭐ IMPORT جديد
+import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/ui/toast";
 
-const geistSans = Geist({
+// استبدال Geist بخط Inter (متوافق مع Next 14)
+const inter = Inter({
+  subsets: ["latin"],
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 export const metadata = {
@@ -25,10 +21,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050505]`}
+        className={`${inter.variable} antialiased bg-[#050505]`}
       >
         <ToastProvider>
-          <AuthProvider> {/* ⭐ أضفناها هنا */}
+          <AuthProvider>
             <CartProvider>
               <Navbar />
               <main>{children}</main>
