@@ -16,24 +16,14 @@ export default function VerifyLoginPage() {
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
 
-  // ⚠ الحل هنا — نخزن temp بعد التحميل فقط
-  const [temp, setTemp] = useState(null);
+  // نقرأ رقم المستخدم اللي عايز يسجل دخول
+  const temp = JSON.parse(localStorage.getItem("bz-temp-login") || "{}");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const data = JSON.parse(localStorage.getItem("bz-temp-login") || "{}");
-      setTemp(data);
+    if (!temp?.phone) router.replace("/auth/login");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      if (!data?.phone) {
-        router.replace("/auth/login");
-      }
-    }
-  }, [router]);
-
-  // لو temp لسه محملش → إرجع null عشان SSR ما يفشلش
-  if (!temp) return null;
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (timer <= 0) return;
     const t = setTimeout(() => setTimer((x) => x - 1), 1000);
@@ -93,11 +83,13 @@ export default function VerifyLoginPage() {
         return;
       }
 
+      // تسجيل دخول رسمي
       login(data.user);
 
       localStorage.removeItem("bz-temp-login");
 
       showToast("✅ تم تسجيل الدخول بنجاح");
+
       router.push("/");
 
     } catch (err) {
@@ -128,7 +120,7 @@ export default function VerifyLoginPage() {
         {/* OTP BOXES */}
         <div
           className="flex justify-between mb-6"
-          style={{ direction: "ltr" }}
+          style={{ direction: "ltr" }}  
           onPaste={handlePaste}
         >
           {digits.map((d, i) => (
